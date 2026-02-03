@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天吃什么？决策大转盘</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin-bottom: 30px;
+        }
+
+        /* 箭头指示器 */
+        .arrow {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #ff4757;
+            z-index: 10;
+        }
+
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 8px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            overflow: hidden;
+        }
+
+        .controls {
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #result {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff4757;
+            margin: 20px 0;
+            height: 1.6rem;
+        }
+
+        .btn-main {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+            transition: 0.2s;
+        }
+
+        .btn-main:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .menu-input {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="result">准备好开饭了吗？</div>
+
+    <div class="wheel-container">
+        <div class="arrow"></div>
+        <canvas id="wheel" width="600" height="600"></canvas>
+    </div>
+
+    <div class="controls">
+        <button class="btn-main" id="spinBtn" onclick="spin()">开始抽取</button>
+        
+        <div class="menu-input">
+            <p>输入备选项（用逗号分隔）：</p>
+            <textarea id="itemsInput" rows="2">黄焖鸡, 疯狂星期四, 撒浪嘿萨马拉, 减脂沙拉, 螺蛳粉, 麻辣烫, 快乐水配汉堡, 楼下兰州拉面</textarea>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const itemsInput = document.getElementById('itemsInput');
+    const resultDisplay = document.getElementById('result');
+    const spinBtn = document.getElementById('spinBtn');
+
+    let items = [];
+    let currentRotation = 0;
+
+    function drawWheel() {
+        items = itemsInput.value.split(/[，,]/).filter(i => i.trim() !== "");
+        const numItems = items.length;
+        const angle = (2 * Math.PI) / numItems;
+        const colors = ['#ff9f43', '#ee5253', '#0abde3', '#10ac84', '#5f27cd', '#ff9ff3', '#54a0ff', '#00d2d3'];
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        items.forEach((item, i) => {
+            const startAngle = i * angle;
+            ctx.beginPath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.moveTo(300, 300);
+            ctx.arc(300, 300, 300, startAngle, startAngle + angle);
+            ctx.fill();
+            ctx.stroke();
+
+            // 绘制文字
+            ctx.save();
+            ctx.translate(300, 300);
+            ctx.rotate(startAngle + angle / 2);
+            ctx.fillStyle = "white";
+            ctx.font = "bold 30px Arial";
+            ctx.fillText(item.trim().substring(0, 6), 100, 10);
+            ctx.restore();
+        });
+    }
+
+    function spin() {
+        if (items.length < 2) return alert("至少写两个选项吧！");
+        
+        spinBtn.disabled = true;
+        resultDisplay.innerText = "命运转动中...";
+
+        const extraDegree = Math.floor(Math.random() * 360) + 3600; // 旋转至少10圈
+        currentRotation += extraDegree;
+        
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+
+        setTimeout(() => {
+            spinBtn.disabled = false;
+            // 计算最终落在哪个区域
+            const actualDegree = currentRotation % 360;
+            const anglePerItem = 360 / items.length;
+            // 补偿转盘初始位置和CSS旋转方向的关系
+            const index = Math.floor((360 - actualDegree + 270) % 360 / anglePerItem);
+            resultDisplay.innerText = "今天就吃：" + items[index].trim();
+        }, 4000);
+    }
+
+    // 监听输入，实时重画转盘
+    itemsInput.addEventListener('input', drawWheel);
+    
+    // 初始化
+    drawWheel();
+</script>
+
+</body>
+</html>
